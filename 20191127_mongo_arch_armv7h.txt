@@ -1,0 +1,168 @@
+		  ___________________________________
+
+		   MONGODB ON ARCH ON RASPBERRY PI 4
+
+			    Mikey Dickerson
+		  ___________________________________
+
+
+<2020-11-27 Fri>
+
+So what had happened was, I had a Raspberry Pi 3b that ran the default
+2Raspbian version of Linux.  It ran the Ubiquiti Unifi controller and
+the cups server with hp-lip printer drivers (because keeping that 500MB+
+pile of trash working on a whole bunch of machines is a sucker's game).
+This worked fine and it seemed to still be on a maintained raspbian
+branch that required almost no work.
+
+This had to be fixed.  So I got a Raspberry Pi 4b and wanted to move
+unifi to it.  It should have been easy.  It was made very difficult
+because of many poor choices:
+
+1. Ubiquiti chose to have its Unifi controller depend on mongodb to
+   store its configuration.  If mongodb is good for anything, it is for
+   storing bags of unstructured data that are so big they have to be
+   split across hundreds of machines.  A more traditional choice for a
+   few hundred kb of rigidly structured configuration data would have
+   been sqlite, or maybe, like, a file.
+
+2. mongodb chose to invent a new licensing scheme in 2018 because they
+   were mad they weren't making as much money as Amazon or Google.  The
+   poo bahs of Open Source have rejected the new license, meaning that
+   mongodb packages are disappearing from Linux distributions
+   everywhere.  Amazon and Google have removed it from their products
+   rather than pay 10gen, so that's all going well.
+
+3. I chose to try to do all of this on arch linux, because I am using it
+   on other things, and I want to feel like it was worth something to
+   learn the 350 variations of 'pacman -Qppd -ke@v3' it requires.
+
+Ok, the only way forward is going to be to compile a mongodb binary from
+source.  Why not?  I haven't fought with CPPFLAGS in a while.
+
+Upon this attempt, many more poor choices come into view.
+
+@4. mongodb does not use make, it uses scons.  scons is the based on the
+  idea that you should write arbitrary unconstrained python programs to
+  build your other programs.[1] scons is basically a bag of helper
+  libraries for doing this, which you can use, or just completely
+  ignore.  The internet is full of people that will argue that you CAN
+  write readable SConstruct files.  Just like you CAN write readable
+  perl scripts and you CAN write secure php webzones.  The only problem
+  is that nobody has ever done so.
+
+@5. Even worse, some of the C++ that is going to go into the actual
+  mongodb compilation is generated out the side of the scons build as it
+  huffs and puffs along.
+
+These two facts interact especially poorly with another unpopular
+choice:
+
+@6. The Python people have decided that Python 2 was something of a
+  botch and have created Python 3, which is extremely not
+  backward-compatible.  It has several breaking changes to syntax which
+  are easy to fix and can be automated.  But it also has several subtle
+  changes to the type system that will lead programs to produce
+  different output with no error.  This makes it very hard to migrate,
+  hence Python has been waging this campaign for over a decade and most
+  of the world is not moving from python2.  So that's all going well.
+
+Facts 4, 5, and 6 team up to make it nearly impossible to build a
+mongodb package at a point in the past.  That's because the build
+depends on scons and python2, and current scons only works on python
+3.[2] Without clues from various previous travelers on the internet[3],
+it's unlikely I would have ever gotten this to work.  Here are some of
+those clues.
+
+The mongodb "building from source" instructions will warn you about
+myriad dependencies, and after that, they are no help.
+
+[https://github.com/mongodb/mongo/wiki/Build-Mongodb-From-Source]
+
+From this I learn that mongodb developers live in a place where they
+just type 'scons' and then go play ping-pong while they wait.  Here is a
+person that had to be more of a rugged individualist:
+
+[https://www.clarenceho.net/2015/12/building-mongodb-30x-for-arm-armv7l.html]
+
+Clarence's patch hacks the "armv7l" architecture into the v8 build
+process, which I would have been unlikely to figure out.[4] This got me
+a good distance, but eventually sank on the rocks of not being able to
+resolve the python2 build code against the python3 version of scons.  I
+even got a mongo binary, which immediately segfaulted.
+
+Bent but not broken, I wandered out onto the internet again.
+
+Dominic Chen (ddcc) maintains mongodb 3.2 for 32-bit ARM for Debian:
+
+[https://www.dcddcc.com/blog/2018-06-09-building-mongodb-for-32-bit-ARM-on-debian-ubuntu.html]
+
+and its patches can be pulled out of:
+
+[https://github.com/ddcc/mongodb]
+
+3.2 turns out to be the ticket.  It contains a bundled copy of scons
+from the time, probably because everybody was having the python2
+vs. python3 problem.  It is old enough to work for the Unifi controller.
+It is new enough to almost compile using current versions of most of the
+C++ dependencies.  Using the ddcc fork on github as a starting point, I
+forked another fork and only had to fix 6 more build failures which are
+in the commit history here:
+
+[https://github.com/mdickers47/mongodb/commits/master]
+
+- libboost changed the prototype of boyer_moore_search at some point.
+  Patch is c4e2d8f.
+
+- libboost includes moved around.  Patch is fc0c84e.
+
+- libboost changed the way you create a "none" type.  Patch is ff788bc.
+
+- gcc stopped accepting a weird syntax that was used in a parser test
+  file.  Patch is 41234ac.
+
+- jstests/core/hostinfo.js assumed that i386 was the only 32-bit
+  architecture.  (This is in the test suite, you might not care.)  Patch
+  is fa6f252.
+
+- the system version of sock.h now defines INVALID_SOCKET=-1 and typedef
+  SOCKET=int.  This makes mongodb's util/net/sock.h not compile, but
+  fortunately it wanted the same definitions.  Patch is 9cfaed9.
+
+With the above, 'scons core' is now able to produce binaries that pass
+tests.  I gave up trying to make 'scons install' work, because it
+wanders off and tries to compile the test suite.  Which I had run
+already, and was now trying to clean up the build process to make an
+arch package.  The arch "package source" (basically build instructions)
+is now at:
+
+[https://github.com/mdickers47/mongodb-pkg]
+
+And the binary package that is running for me right now is at:
+
+[https://github.com/mdickers47/mongodb-pkg/releases]
+
+You should not trust random internet binaries.  But making your own will
+take 10-12 hours and 10GB+ of disk space, so if you would rather YOLO,
+here they are.  Running the tests about doubles that.  Beware of the
+overheating problem on Raspberry Pi 4.[5] Doing this build over and over
+eventually killed an SD card on mine.
+
+
+[1] I assume someone has already invented sconscons, the awesome new way
+    to generate your scons code using a lightweight framework of 32,000
+    lines of node.js.
+
+[2] At least this is true of the packages I could easily find.  I did
+    not want to add another stack frame for "let's get an scons package
+    from the past to work"
+
+[3] [https://goonies.fandom.com/wiki/Chester_Copperpot]
+
+[4] Did I mention that you also get to build an entire copy of the v8
+    javascript engine because it is embedded in mongodb?  Well you do!
+    Except on versions that use spidermonkey, then you get to build
+    that.
+
+[5]
+[https://www.jeffgeerling.com/blog/2019/raspberry-pi-4-needs-fan-heres-why-and-how-you-can-add-one]
