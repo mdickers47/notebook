@@ -6,10 +6,10 @@
 		  ___________________________________
 
 
-<2020-11-27 Fri>
+<2019-11-27 Fri>
 
 So what had happened was, I had a Raspberry Pi 3b that ran the default
-2Raspbian version of Linux.  It ran the Ubiquiti Unifi controller and
+Raspbian version of Linux.  It ran the Ubiquiti Unifi controller and
 the cups server with hp-lip printer drivers (because keeping that 500MB+
 pile of trash working on a whole bunch of machines is a sucker's game).
 This worked fine and it seemed to still be on a maintained raspbian
