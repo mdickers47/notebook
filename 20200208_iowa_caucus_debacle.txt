@@ -1,0 +1,98 @@
+	  _____________________________________________________
+
+          WHY DEBACLES LIKE THE IOWA CAUCUS WILL KEEP HAPPENING
+
+			    Mikey Dickerson
+	  _____________________________________________________
+
+
+<2020-02-08 Sat>
+
+From the moment I saw the first headline blaming the Iowa caucus
+reporting delay on a smartphone app, I knew what was coming: garbled,
+contradictory bug reports from the field. Social media jammed with
+toxic false rumors and deliberate spin bordering on disinformation.
+News stories sourced from anonymous quotes that are more about score
+settling than anything that happened in Iowa. And by the next day,
+a mailbox full of questions from journalists with a familiar refrain:
+from healthcare.gov to the latest debacle, why does this keep
+happening?
+
+There are answers. In fact, they are well known in some circles.
+Most importantly, the government and political arenas share two
+harmful cultural attitudes that contribute to repeated, avoidable
+failures.
+
+The greatest cultural problem was on display this week. When things
+start to go wrong, everyone from the Twittersphere to reporters
+scramble to find and blame a single cause: one mistake; one vendor;
+one individual. This is both tactically useless in the moment and
+strategically self-destructive in the long run.
+
+In reality, when a system as complicated as the Iowa caucus breaks
+down, it is the product of multiple minor failures, incidents, and
+unexpected behaviors. Fixing it is like assembling a jigsaw puzzle
+where 300 people each hold one piece. It is impossible to address
+when everyone knows that whoever is found holding the "worst" piece
+is going to become a scapegoat for the entire picture. This is why,
+in government and politics, big failures are almost never followed
+by big fixes.
+
+Poor failure management has long-term corrosive effects as well.
+Simple survivor bias means that leaders at too many of our most
+important institutions are people that, having experienced failure,
+have learned only one lesson, which is to dodge accountability.
+After Iowa, as in past incidents, the individuals who just learned
+much more meaningful (and expensive) lessons about how to build
+reliable technology will leave and take their knowledge with them.
+
+Other, more successful industries hold blameless problem resolution
+as a core value. Aviation did not get safe enough for commercial
+air travel until regulators and the industry learned to stop writing
+down pilot error as the root cause of every crash. Thomas Watson,
+former chairman of IBM, once famously said: "I was asked if I was
+going to fire an employee who made a mistake that cost the company
+$600,000. No, I replied, I just spent $600,000 training him."
+
+A second problem endemic to government and politics is that our
+large institutions do not understand that their core missions now
+depend on new technology. If you spend time with the leaders of
+old, large institutions, you will discover that many of them think
+of the tech industry in 1980s stereotypes, of nerds that live in
+the basement and can be paid in pizza and Mountain Dew. Worse,
+thanks to the overwrought hero stories of 2008 and 2012, progressive
+politics has an entrenched belief that all we will ever need,
+tech-wise, is a couple of plucky volunteers to work miracles from
+their garage for a few weeks. Convenient stereotypes feed leaders
+natural fear of change and desire to maintain control, and the
+result is that critical decisions about schedule, scope, and budget
+for large tech projects are often made with no input from technical
+experts.
+
+There is a third factor that is particularly relevant in politics
+on the Democratic side, which stems from a belief that good technology
+comes from lone prodigies. Unlike the Republicans, the Democratic
+establishment has no sustainable, built-to-last technical infrastructure
+that receives reliable support from donors or party leaders. Instead,
+we put misplaced faith in the market solving our infrastructure
+needs, in the form of myriad shoestring operations competing for
+tiny venture-capital-style seed grants and contracts from PACs and
+campaigns. The money that flows to tech firms is a tiny fraction
+of political spending, and it dries to nothing in the off-season.
+The Clinton campaign hired a team of dozens to curate data and build
+technology. Nearly all of them have left politics, taking their
+knowledge and expertise with them. The same was true for most of
+the entrepreneurs who, motivated by Trumps election, stepped into
+the ring in 2017.
+
+The real priority is in plain sight. Multiple organizations have
+announced plans to spend hundreds of millions of dollars on ad
+campaigns to fight Trump in 2020. Contrast that with the $60,000
+budget and two-month timeline for an app to execute what may be the
+most critical primary of the season.
+
+Eventually, the media will likely conclude that the Iowa situation
+was a perfect storm of uniquely incompetent people and unforeseeable,
+one-off anomalies. The truth is that these storms are a product of
+the climate we have constructed for ourselves. Until we change it,
+spectacular civic tech flops will remain perfectly normal.
