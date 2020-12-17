@@ -1,0 +1,1135 @@
+			   _________________
+
+			     MPD AND SNDIO
+
+			    Mikey Dickerson
+			   _________________
+
+
+Long long ago, when the gods and goddesses used to mingle in the affairs
+of mortals, a company named Slim Devices set out to make a living room
+listening experience for "digital music."  The golden age of Napster was
+over[1], but the mega-corporate licensing deals that established
+"legitimate" sales channels were still years away[2].  A "digital music"
+user was a person that had a big hard disk full of poorly organized mp3
+files of dubious quality and dubious origins.  This person listened to
+the mp3s using Winamp, which really whipped the llama's ass,[3] through
+the beige box "multimedia" speakers that came with their beige box
+computer[4], which did not whip anything.
+
+The Slim Devices "squeezebox" was born in this world.  It was a black
+box that you attached to the network and your stereo.  It had a remote
+control and a vacuum-fluorescent display[5], so there was some limited
+ability to control it directly.  It would be on Crowdsupply if it were
+being made today.
+
+The software that drove the squeezebox was the "slimserver," a huge mess
+of Perl that you ran on the computer with your music files.  It decoded
+whatever format you had and sent the PCM stream over the network to
+however many players you wanted.  The slimserver contained its own
+web-page UI which was what you used to control the whole scheme.
+
+The slimserver was completely open (not that they had much choice, since
+it was just a giant mess of Perl), and the hardware was sorta open-ish.
+I modified mine to handle my made-up variant of containerized flac
+files.[6] The "slim" server steadily got slower, less "slim," and less
+reliable, almost as if it was a giant spaghetti mess of Perl that had
+hundreds of people flailing on it.  But it still worked for years.
+
+Slim Devices was acquired by Logitech in 2006.  The software immediately
+bloated up with corporate streaming and "cloud" crap.  They tried to
+recenter the idea on a Logitech-hosted music service, and various other
+lame Clear Channel-esque tie-ins.  The last products in the line were
+"internet radios" that kind-of interoperated with the old players and
+slimserver.  Unsurprisingly, they were all dead and gone by 2012.[7]
+
+Since 2012, the music industry has realized its greatest dream, and
+pushed almost everyone to paid subscriptions, the better for monthly
+recurring revenue.  This is such a success that the total value of the
+business is down about 75% from its 1999 peak, adjusted for inflation
+and population.[8] In 2020, the only music-oriented consumer product is
+a tacked-on feature for "voice assistants", the latest useless
+tech-company-promoted crap.
+
+Which brings us back to where we started: Being still alive, and still
+wanting to listen to my own music in my own house, I have to put
+something together out of weird hobbyist and kickstarter parts.  That is
+the goal of this adventure: to recreate the quality and features of 1999
+technology.
+
+
+1 What this will take
+=====================
+
+  I have a file, and I want it to go into my ears.  Here are things that
+  have to happen.
+
+  +----------------+
+  | file => decode |  => DAC => analog   => speakers => ears 
+  | to PCM         |            hardware                               
+  +-^--------------+
+    |
+    +-- some kind of browser/player UI
+
+  There are a multitude of choices for each thing, except ears.
+
+
+2 Constraints of ears and scale
+===============================
+
+  The part that can't be replaced is my ears.  They are OK.  They are
+  more discerning than some ears.  I won't listen to tinny one-inch
+  laptop speakers or in-ear earphones, and I will notice if the EQ is
+  all screwed up in a rental car.  But beyond a certain medium-quality
+  threshold, I don't care.  I do not have hypersensitive "audiophile"
+  ears, and do not believe I can hear microscopic variations in the gold
+  plating on the connectors or the power supply current.  I have done
+  the experiment (years ago) and found that I can't tell the difference
+  between a 192kb mp3 and the "original" PCM, which is a clue to the
+  "don't care" threshold is.
+
+  So, if you have very different ears, then you will want to make
+  different choices pretty much from here on.
+
+  Scale-wise: I have about 1400 ripped CD images, and about 15,000 other
+  single tracks, which are mostly MP3s and mostly from the Amazon or
+  (RIP) Google Play stores.  This may eventually get about twice as big,
+  considering my life is about half over, but it won't ever be 10x this
+  size.  All told, the source files weigh about 1 TB.
+
+
+3 Speakers and analog amps
+==========================
+
+  I already have speakers in many shapes and sizes.  I have gotten rid
+  of more speakers than you kids have ever owned.  The ones I have now
+  are fine, and I want the music to come out of them.  Likewise, I
+  already have receivers, stereos, and amps, and no need to replace any
+  of them.
+
+  If you don't have the analog parts already, then these little
+  speakers[8] are very good.  For their size and price, they are
+  amazing.  Here is a tiny amp that will enlouden them more than anyone
+  needs indoors.[9] There are bazillion clones of both things, and they
+  are probably all the same.  The quality-to-dollars ratio on this stuff
+  has improved dramatically in the past 20 years.
+
+  I'm not interested in any object that welds together the analog parts
+  with the electronic parts.  The analog parts are made out of physics
+  and last for decades.  The electronic parts are made out of computer
+  which rots away (physically or bit-wise) every couple of years.
+
+
+4 The hardware players
+======================
+
+  For the thing that plugs into the amp that plugs into the speakers,
+  the old squeezebox was the right idea.  It needs to connect to a
+  network, accept a PCM bitstream somehow, and send it to a good-enough
+  DAC.  That is all it needs to do.  This DAC-on-a-stick should only use
+  a couple of watts, and when it is inactive, it should be milliwatts.
+  Also, it should be cheap, because in 2020 a good-enough DAC is 75
+  cents[10], and a very fancy DAC is $5.[11]
+
+  I ended up spending very litle time on this.  I already had some
+  Raspberry Pis, which are an easy place to start.  They are easy to put
+  on the network with whatever version of Linux you want, from which you
+  can install whatever you want.  (I don't really know why, but I am
+  using Arch, "Broken By Default(TM)".)
+
+  The built-in 3.5mm jack "audio interface," however, turns out to be
+  hot buttered garbage.  If you want to turn it on, the line for
+  /boot/config.txt is "dtparam=audio=on".  But you don't want to turn it
+  on.  It will show up in ALSA with weird broken controls and no ability
+  to change volume.  It leaks random buzzing and electrical noises when
+  it's "off."  That's because there is no DAC at all; it's a hilarious
+  bit-banged PWM pin off the multi-purpose BCM2835 "peripherals"
+  chip.[12] By applying weird clock dividers and brute force, the kernel
+  driver can squawk out 11-bit audio at sample rates sort of close to
+  48k or 44.1k.  The resulting sound is very similar to what you get
+  from the famous "FM radio hack"[13], which makes sense, because it is
+  the same mechanism.  So I give this device high marks for comedy--as
+  an output that works equally well whether you plug in the cable or
+  not--but it's not good enough for listening beyond novelty value.  No
+  wonder it's disabled by default and barely documented.
+
+  Moving on, there are several Rasperry Pi add-on devices that will add
+  a DAC via the i2c interface.  Past reviewers seemed to think IQAudIO
+  were the best, but they don't exist anymore.  Still in existence are a
+  set of Pimoroni devices called "Pirate Audio"[14], and several
+  variations of the "Hifiberry" card.[15] The Pimoroni ones are a little
+  too cutesy for me, plus I don't want to spend a week trying to make
+  the tiny little integrated display do something (and I will not be
+  able to ignore it).
+
+  But that Hifiberry, that's a God-fearing circuit board.  So I got some
+  of the "DAC+ RCA" model.  Installing them went exactly the way the
+  instructions said:
+
+  1. Put "dtoverlay=hifiberry-dacplus" in /boot/config.txt
+  2. "Turn off" (unplug) Raspberry Pi
+  3. Smash the hifiberry onto the 40-pin connector
+  4. "Turn on" Raspberry Pi
+
+  That's it; the device appears in ALSA, it has sensible mixer controls,
+  and it doesn't get confused or screw up when you send it 44.1k or 48k
+  PCM.  At this writing, they have run many hours a day for two weeks
+  with no issues.
+
+  So, the near-ideal hardware endpoint seems to be a Raspberry Pi 3B+
+  plus Hifiberry DAC+.  (The Pi 4 also works, but it is a bad design
+  that overheats and has power issues and is unstable.[16]) Altogether,
+  this scheme is a little expensive, since the Hifiberry is an annoying
+  $40, but the total should still be under one benjamin.  The
+  squeezeboxes were over $200 in 2003 dollars, so this is not bad.
+
+
+5 The software server
+=====================
+
+  I already export a copy of everything to Opus so that VLC can play it
+  on my phone (which, ironically, requires buying a low-end phone to get
+  a micro-SD card slot).  This works ok enough.  So a natural thing to
+  try was to put VLC on the Raspberry Pi and let it be the decoder and
+  browser.  This was too clunky and slow.  Plus, it seems bad to install
+  gigabytes of VLC/ffmpeg dependencies on the players.  All of this has
+  a short half-life and requires constant maintenance, and it will be
+  annoying to repair multiple slow devices that depend on the
+  not-very-dependable Arch ARM repositories.
+
+  I made a perfunctory effort to run VLC on a big machine, with
+  "streaming" output to a VLC on the small machine.  VLC has always
+  claimed to have this feature.  Documentation is extremely poor (as
+  with everything related to vlc and ffmpeg), and the few examples are
+  all based on screenshots of old windows versions, leaving the
+  impression that no one has ever actually used this outside of a dorm.
+  It did not work in 2001 and it does not work now.  This isn't the
+  thing I am looking for.
+
+  Going back onto the internet with my sharp stick, I found that the
+  spiritual heir to the slimserver is a thing called "MPD" (Music Player
+  Daemon).  It looked promising.  First of all, it only does "music,"
+  not video.  Somewhere that I can't find now, it said that its maker
+  intends for it to work on very small machines, which is good no matter
+  what size machine it ends up on.  Finally, it has a modular design:
+  there are plugins for input, codecs, and output, and it is controlled
+  via a socket protocol, and many controller programs ("clients") exist
+  in different styles.  This is much better than a giant monolith that
+  is eventually going to become unrunnable because of some library for
+  playing Commodore 64 SID files that I could not care less about.  Many
+  of these plugins are sure to be junk, but if the few that I need are
+  ok, and I can remove the rest, then I don't have to care.
+
+  It is easy to get mpd going.  At first I put it on the Pi 3, figuring
+  we would see about this claim that it requires few resources.
+  Basically it works.
+
+  The source files are all exported over NFS already, so I tried to read
+  them from there.  But the "nfs" mpd plugin did not work.  It runs
+  itself out of file descriptors when trying to scan the source files,
+  which means it leaks them.  I didn't bother to try to debug this,
+  because obviously you can just mount the NFS filesystem and let
+  Linux's less-bad NFS implementation do it.
+
+  At this point, I have the following, and can do the the thing that was
+  ostensibly the purpose of the project, which is play jams in the
+  basement.
+
+  +-----------------------+
+  | rpi + hifiberry + mpd | 
+  |   decode  => DAC      |  => analog   => speakers => ears 
+  |   to PCM              |     hardware                        
+  +-^---------------------+
+    |
+    +-- source files over NFS
+
+  But it's hardly sporting to stop now when mpd can do so much other
+  stuff, is it.
+
+
+6 Network transport from the server to the players
+==================================================
+
+  I have mpd working in one room, but I have multiple rooms with
+  stereos, and I need them to all work the same.  Again there are
+  several ways to go.
+
+  Obviously, I could just make more Raspberry Pis that are all the same,
+  with their own copies of mpd.  They would each have their own play
+  queue and their own database, sharing only the NFS server (which will
+  never care; it was made for massively larger workloads).  This is the
+  only option if you want to be able to play different things in
+  different rooms at the same time.  But since I am only one person,
+  playing two things at once is not really useful, and independent
+  queues and databases are anti-features.
+
+  Another option is a hybrid MPD mode where it outsources its database
+  to another (presumably faster) machine.  Only the local outputs and
+  play queue should be independent in this scheme.  This is a nice
+  option if your world has more people, making independent play queues
+  useful at least sometimes.  But again, this is an anti-feature for a
+  world of one person.  (All I will say in my defense is that this is
+  December 2020.)  So I did not test this mode.
+
+  We could go the other way, and make the hifiberry players as dumb as
+  possible, just DACs on a wire.  Even a raw CD audio bitstream only
+  runs 1.4Mbps, which is no big deal on 1000Mb ethernet.  I know there
+  is a way to forward that stream over the network; I have done it with
+  netcat since ancient times.  So there must be a way to have mpd decode
+  once, and send the PCM whereever I want it to go.
+
+  Unfortunately, it turns out there is not A way to do this.  There are
+  SEVERAL ways.  When there are several ways to do something in lo-fi
+  open source nonsense world, it means they all suck in different ways
+  that will take all day to figure out.  This is because we go in loops
+  where someone declares "these all suck, I am going to start over and
+  Do It Right," and then they implement the easiest 80% of the problem
+  and get stuck, same as everyone that came before, and now there is one
+  more broken project to bicker and feud with the other broken projects,
+  forever.  In this fashion, we have at least three Linux audio
+  subsystems.
+
+  For orientation purposes, here is the diagram you will find on the
+  internet, accurately titled "The Linux Audio Mess."[18]
+
+
+6.1 ALSA
+~~~~~~~~
+
+  First you have to understand ALSA.  ALSA isn't exactly like the other
+  things in this list.  It is the interface the Linux kernel offers to
+  the sound cards, so no matter what else you do, you are going to have
+  to mess with it until it works.  It's also not exactly unlike the
+  other things in this list, because it tries to do software mixing
+  (poorly) and resampling (poorly), and tends to insert these modules
+  without you asking or knowing.  It has been a kernel API for a long
+  time, so almost anything that compiles on Linux is going to use
+  libasound.  (oh, ALSA is called "asound" on your computer, just not in
+  documentation.)
+
+  Here is how to check out if ALSA is working:
+
+  > $ cat /proc/asound/cards $ aplay -l
+
+  Do you see anything that resembles your hardware?
+
+  > $ aplay -L
+
+  Here are the "ALSA devices" that a program can open.  The naming
+  convention is not consistent, so you probably have to specify
+  "Headphones" in one program and "CARD=ALC662,DEV=2" in another.
+  Ideally the one labeled "default" will be what you want, so you don't
+  have to mess with it.
+
+  (Note that if you have already got JACK, Pulseaudio, or anything
+  similar running, this device list is going to have a whole bunch of
+  stuff in addition to the hardware.)
+
+  > $ aplay /path/to/how_many_assholes_do_i_have_on_this_ship.wav
+
+  Did you hear anything?  If you got some kind of permission-denied
+  error, you probably have to add yourself to a special group and re-log
+  in.  If it appeared to work but there was no sound, then look in
+  alsamixer for something that is muted or otherwise screwed up.
+
+  There's no point going farther until you can get something to play
+  through ALSA to the speakers.  All of the other "audio systems" sit on
+  top of ALSA, no matter how hard their documentation tries to convince
+  you otherwise.
+
+
+6.2 JACK
+~~~~~~~~
+
+  Back on track: the thing I wanted to do was forward the audio stream
+  decoded on one computer to the sound card on another.  The first way I
+  try to do this is with JACK, or "JACK Audio Connection Kit".  It
+  starts out looking good:
+
+  > "Have you ever wanted to take the audio output of one piece of
+  > software and send it to another?"[19]
+
+  Yes!  That's what I want to do right now!
+
+  > "How about taking the output of that same program and send it to two
+  > others, then record the result in the first program?"
+
+  Uh .. Not something that I want to do, but probably if JACK can do
+  that, it can do what I want?
+
+  > "JACK differs from other audio servers in being designed from the
+  > ground up for professional audio work."[20]
+
+  Great!  I have prosumer-ish equipment and desires, and I am definitely
+  an Engineering Professional.  Let's try it.
+
+  > $ pacman -Ss jack
+  > extra/jack 0.125.0-9
+  >     A low-latency audio server
+  > community/jack2 1.9.16-1
+  >     C++ version of the JACK low-latency audio server for
+  >     multi-processor machines
+  > ...(many, many more)
+
+  Uh oh: we immediately have to choose sides in a stalled v1 to v2
+  rewrite.  Which one do I want?  Well there's a long wiki page with a
+  table of differences.[21]  It also helpfully explains that JACK1
+  version numbers start with 0, and JACK2 version numbers start with 1,
+  therefore JACK 1.9.16 is JACK2.  Got it?
+
+  As a highly experienced computer professional, I can translate this
+  wiki page.  It says that JACK1 is what people actually use, but it is
+  not maintained anymore, because the developers got excited about
+  rewriting the whole thing in C++, which is not finished and probably
+  never will be.  Apache lived in this state for years.  Python is doing
+  it right now.  Ok.  So "JACK 1" (version 0) is probably what I want.
+
+  > $ doas pacman -S jack # [22]
+
+  Now we have lots of things to try out in /usr/bin:
+
+  > jack_alias            jack_load_test       jack_server_control
+  > jack_bufsize          jack_lsp             jack_session_notify
+  > jack_connect          jack_metro           jack_showtime
+  > jackd                 jack_midi_dump       jack_simple_client
+  > jack_disconnect       jack_midiseq         jack_simple_session_client
+  > jack_evmon            jack_midisine        jack_transport
+  > jack_freewheel        jack_monitor_client  jack_transport_client
+  > jack_impulse_grabber  jack_netsource       jack_unload
+  > jack_iodelay          jack_property        jack_wait
+  > jack_latent_client    jack_rec
+  > jack_load             jack_samplerate
+
+  The general idea is that you start a jackd process, running as
+  yourself, and it does all the routing and mixing and sends its final
+  output to ALSA.  It's always easiest to try this kind of thing in a
+  terminal first, and then worry about making it a "daemon" if it works.
+  man jackd suggests this is all we need:
+
+  > $ jackd -d alsa -r
+  > jackd 0.125.0
+  > ...
+  > JACK compiled with System V SHM support.
+  > loading driver ..
+  > apparent rate = 48000
+  > creating alsa driver ... hw:0|hw:0|1024|2|48000|0|0|nomon|swmeter|-|32bit
+  > configuring for 48000Hz, period = 1024 frames (21.3 ms),
+  > buffer = 2 periods
+  > ALSA: final selected sample format for capture: 32bit integer
+  > little-endian
+  > ALSA: use 2 periods for capture
+
+  Seems ok .. No instructions explained this, but I eventually found by
+  guessing that 'jack_lsp' is the equivalent to 'aplay -L' for showing
+  you the JACK "ports" that now exist:
+
+  > $ jack_lsp
+  > system:capture_1
+  > system:capture_2
+  > system:playback_1
+  > system:playback_2
+
+  I have mplayer sitting around, and it can output to JACK:
+
+  > $ mplayer -ao jack -vo null /mnt/nas/path/to/something.opus
+
+  This works.  So far so good.  Now how do I make JACK ports that
+  forward over the network?  Back to the JACK FAQ:
+
+  > How do I use JACK over a network?
+  >
+  > Before we move on to answering the question "How do I use JACK
+  > over a network?", we must first deal with one of the unfortunate
+  > ugly realities of the open source world: choice.  There have been
+  > several efforts to provide JACK-over-a-network...[23]
+
+  Oh no.  We have found a third level of recursion, from "JACK is one of
+  many attempts to write a Linux audio subsystem", to "JACK1 is one of
+  two attempts to write JACK," to "there are at least four attempts to
+  provide JACK-over-a-network."  This would probably be a good time to
+  turn back.  Continuing forward, I discover that the netJACK situation
+  is the same as JACK itself: netJACK1 is the one that people use, and
+  the others also exist.
+
+  Let's just try netJACK1.  The terms it uses are "master," meaning the
+  jackd process that outputs to a sound card, and "slave," meaning the
+  multiple jackd processes that output to a "master."  Aside from this
+  being not the preferred nomenclature, it is confusing and backwards
+  from the setup I want.  It is trying to allow many sound sources to
+  dump into a single sound sink, which makes some sense if the one sink
+  is for recording or broadcast.  What I want is the opposite: one
+  source distributing to multiple sinks, a concept that doesn't seem to
+  exist.  This would probably be a good time to turn back.
+
+  Continuing forward, I find that I can muddle through and get netJACK1
+  do its thing without instructions, which is good because there aren't
+  any:
+
+  > master$ jackd -r -d alsa -P # start it like normal
+  > slave$ jackd -r -d net -P
+  > Unknownage with option 'P'
+
+  All right, so the -P option (only set up outgoing aka 'playback'
+  channels) is "unknownage" when running netjack.  Let's try again:
+
+  > slave$ jackd -r -d net
+  > jackd 0.125.0
+  > ...
+  > loading driver ..
+  > creating net driver ... net_pcm|48000|1024|3000|2|2|transport_sync:1
+
+  Master and slave are ready, let's hook them up.
+
+  > master$ jack_netsource -H slave_machine.lan
+  > Connected :-)
+  > netjack: at frame 000046 -> total netxruns 1 (2%) queue time= 85335
+
+  We got a smiley face, so that's nice.  We lost the terminal, because
+  jack_netsource is another process that runs forever, consuming
+  significant CPU and memory:
+
+  > PID  USER  PR NI   VIRT    RES    SHR S %CPU %MEM TIME+   COMMAND
+  > 7969 alarm 20  0 119100 110860 110468 S  2.6 12.5 0:00.70 jack_netsource
+
+  Ow.  That's 12% of my little player's RAM and 3% of its CPU on a
+  process that is currently doing nothing.  I wonder what's happening on
+  the "slave"?
+
+  > PID USER  PR NI   VIRT   RES  SHR S %CPU %MEM TIME+   COMMAND
+  > 602 mikey 20  0 158208 26892 8844 S  0.7 0.1  0:03.63 jackd
+
+  Sure enough, jackd is hammering away.  It's only 1% of CPU here
+  because this machine has a lot more CPU.  1% is a lot for a process to
+  do nothing.  Nothing else works this way.
+
+  Also, if you noticed, the connection is initiated FROM the master TO
+  the slave, which is backwards even in the mindset where the audio
+  destination is the "master."  The "slave" machines are the ones that
+  have to have ports open, with the firewall hassles that implies.
+  Nothing else works this way.
+
+  I'm not excited about how this is going, but does it work?
+
+  > slave$ jack_lsp -t
+  > system:capture_1
+  >         32 bit float mono audio
+  > system:capture_2
+  >         32 bit float mono audio
+  > net_pcm:capture_3
+  >         8 bit raw midi
+  > system:playback_1
+  >         32 bit float mono audio
+  > system:playback_2
+  >         32 bit float mono audio
+  > net_pcm:playback_3
+  >         8 bit raw midi
+
+  Ok, my "slave" machine believes it has two PCM channels, which are
+  incorrectly named "system," and one MIDI channel which is incorrectly
+  named "net_pcm".  All of them are bidirectional, and left and right
+  show up as different channels.  Let's play something:
+
+  > slave$ mplayer -ao jack -vo null /mnt/nas/path/to/something.opus
+
+  Nope.  Everything looks like it's working, and I can see the bits
+  going over the wire, but nothing comes out.  The missing piece, that I
+  again did not find explained anywhere, is:
+
+  > [master ~]$ jack_connect netjack:capture_1 system:playback_1
+  > [master ~]$ jack_connect netjack:capture_2 system:playback_2
+  > [master ~]$ jack_lsp -c
+  > system:playback_1
+  >    netjack:capture_1
+  > system:playback_2
+  >    netjack:capture_2
+  > netjack:capture_1
+  >    system:playback_1
+  > netjack:capture_2
+  >    system:playback_2
+  > netjack:capture_3
+  > netjack:playback_1
+  > netjack:playback_2
+  > netjack:playback_3
+
+  The 'jack_lsp -c' means 'show me the connections between channels,'
+  which was the clue that I might need to connect them together.  Then I
+  had to realize that from the perspective of the "master" jackd, the
+  incoming streams are capture channels, not playback.  But, I can now
+  do the thing!  My mplayer on the big machine upstairs is playing out
+  the speakers on the Raspberry Pi in the basement.  Latency is
+  imperceptible, which is cool.  MPD has a plugin that outputs directly
+  to JACK, so there is a possible path to victory here.
+
+  Remember I mentioned I could see the bits going over the wire?  There
+  are a whole lot of them:
+
+  > [slave ~]$ iftop
+  >
+  > slave.lan => master.lan 5.58Mb 4.83Mb 4.73Mb
+  >           <=            5.61Mb 4.83Mb 4.73Mb
+
+  Yes, as long as the jack_netsource process is up, it's banging out
+  5.5Mbits in both directions, whether there is any data to transfer or
+  not.  This is inelegant, for what I am trying to do.  It's not like I
+  pay a per-packet rate to use the LAN, but that's a lot of waste, and I
+  am certain that if I put a trillion packets a day through my cheapo
+  switches, I will discover ways they can lock up and go screwy.  All
+  this is worse on the device that is only reachable by wifi.  Can I cut
+  it down to something reasonable?
+
+  > [master ~]$ jack_netsource
+  > usage: jack_netsource [options]
+  > ...
+  > -o <num channels> - Number of audio playback channels
+  > -i <num channels> - Number of audio capture channels
+  > -O <num channels> - Number of midi playback channels
+  > -I <num channels> - Number of midi capture channels
+  > -b <bitdepth> - Set transport to use 16bit or 8bit
+  > -c <kbits> - Use CELT encoding with <kbits> kbits per channel
+  > -P <kbits> - Use Opus encoding with <kbits> kbits per channel
+
+  Lots of promising options here.  First of all, I don't need
+  bidirectional channels, and I don't need MIDI at all.
+
+  > [slave ~]$ jackd -r -d net -o 2 -i 0
+  > [master ~]$ jack_netsource -H slave.lan -i 2 -o 0 -I 0 -O 0
+
+  It works, sometimes.  Other times it just says "Not Connected."  If
+  your remote jackd and your jack_netsource don't agree on the channel
+  configuration, then you will definitely get "Not Connected" and no
+  other hints.  This gets it down to 3.25Mb in the forward direction,
+  and 32kb on the return.  Better, though I have no idea why the traffic
+  in the forward direction decreased.  (The MIDI channel cannot possibly
+  burn 2Mb, can it?)
+
+  Looks like I can reduce the sample size to 16 or 8 bits:
+
+  > [slave ~]$ jackd -r -d net -o 2 -i 0 -b 16
+  > [master ~]$ jack_netsource -H slave.lan -i 2 -o 0 -I 0 -O 0 -b 16
+
+  Also works, and now running a reasonable 1.64Mb forwards (still 32kb
+  return).  Most of what I want to play is 44.1k at 16 bits, which is
+  1.4Mb of raw PCM, so I can't expect this to go lower.
+
+  Unless I can compress the stream.
+
+  > [slave ~]$ jackd -r -d net -o 2 -i 0 -b 16 -c 512
+  > [master ~]$ jack_netsource -H skywise.lan -i 2 -o 0 -I 0 -O 0 -b 16 -c 512
+  > Segmentation fault
+
+  Lol no.  Oh well.
+
+  Actually, when I was doing this the first time, I got far more
+  sigaborts and seg faults.  I also tried JACK2, and it was worse--I
+  never got it to do anything at all except dump core.  Only while
+  reconstructing everything to do this writeup did I manage to shut off
+  the unused channels, making it somewhat usable.  I must have been so
+  confused that I was making mistakes that I can't even repeat on
+  purpose now.  This is normal, but JACK exacerbates it.  That's
+  unfortunately what the "professional" label tends to mean with
+  software: errors are handled by crashing, nothing is documented, and
+  the authors are not interested in how anyone else wants to use it.
+  Many domains are like this.  (TeX, IRAF, and Quark come to mind.)
+
+  Even now that I understand it a little more, I'm not going to use
+  JACK.  I don't see how to address the case of wanting to fan-out one
+  "slave" to multiple "masters."  Moreover, all of the setup is too
+  fragile.  I would want all of the various jack processes to set
+  themselves right again after a Raspberry Pi reboot, and that is going
+  to lead to a systemd pit of despair, and people that have tried have
+  just found themselves in arguments with the JACK creators, who say,
+  "we never intended JACK to be a system service."[25]
+
+  We will leave it at this: I am convinced that JACK is good for
+  something, just not the thing I am trying to do.  Maybe I will have
+  fun with it one day doing the low-latency synchronized musical
+  instrument thing it can do around year 3 of the forever pandemic
+  lockdown.
+
+  For today, let's try pulseaudio instead.
+
+
+6.3 PulseAudio
+~~~~~~~~~~~~~~
+
+  All right, what does PulseAudio say about itself?
+
+  > PulseAudio is a sound system for POSIX OSes, meaning that it is a
+  > proxy for your sound applications. It allows you to do advanced
+  > operations on your sound data as it passes between your application
+  > and your hardware. Things like transferring the audio to a different
+  > machine, changing the sample format or channel count and mixing
+  > several sounds into one are easily achieved using a sound server.
+  > ...  PulseAudio is currently maintained by three volunteer
+  > developers on their free time, which is not really enough...[26]
+
+  Bold opening.  It does say it can "transfer the audio to a different
+  machine," which is what I want.  Away we go.
+
+  > [pi3 ~]$ pacman -S pulseaudio
+  > ...
+  > Packages (29) alsa-card-profiles-14.0-1 js78-78.5.0-2 libsoxr-0.1.3-2...
+  >
+  > Total Installed Size: 89.77 MiB
+  >
+  > :: Proceed with installation? [Y/n]
+
+  90 .. megabytes?  JACK was 2.  Guess we know where this is going.
+  What the hell, let's go there anyway.
+
+  > [pi3 ~]$ pulseaudio
+
+  No output.  Ok, give me debug output then.  Just to feel something.
+
+  > [pi3 ~]$ pulseaudio -v
+
+  Now we've got thousands of messages, and many of them are concerning.
+
+  > I: [pulseaudio] module-device-restore.c: Successfully opened
+  > database file '/home/alarm/.config/pulse/6d5...-device-volumes'.
+
+  We're opening no fewer than three "database files" out of the
+  ~/.config directory.  Then this sequence is repeated 29 times with
+  small variations:
+
+  > I: [pulseaudio] (alsa-lib)conf.c: Unknown parameters 0
+  > I: [pulseaudio] (alsa-lib)pcm.c: Unknown PCM front:0
+  > I: [pulseaudio] alsa-util.c: Error opening PCM device front:0: Invalid
+  >    argument
+
+  It appears that pulse configures itself by trying all the permutations
+  of ALSA parameters until something does not error out.  That's a
+  strategy, I guess.  One that is likely to land on a wrong
+  configuration and then be impossible to change.
+
+  With a few clues from the Arch wiki[27], I get the idea: you run a
+  persistent pulseaudio process, and tell it to do things with pactl.
+  'pactl list' tells you a lot about what is going on.  For example,
+  there are 19 "modules" loaded before I have tried to do anything.
+
+  Let's try to forward a stream over the network.
+
+  > [pi3 ~]$ pactl load-module module-native-protocol-tcp auth-anonymous=true
+  > 20
+
+  As is well known, 20 means "success."  The auth-anonymous parameter is
+  a little odd.  Am I really going to need a bunch of complex options
+  for controlling authentication on the pulse server?  (Narrator: Yes,
+  for reasons that will be discovered shortly.)
+
+  From the big machine, it looks pretty simple to send audio.
+
+  > [big ~]$ PULSE_SERVER=pi3b.lan mplayer -ao pulse /path/to/something.opus
+
+  All right, good.  Configuration by environment variables is another
+  yellow flag, because it is going to be difficult to make permanent.
+  It runs 3.05Mb in the forward direction, and 58kb returns.  I didn't
+  know then, and don't know now, why there is 2x overhead.  But the
+  stream stops when the music stops, so it doesn't matter much.
+
+  Can I make one source fan out to multiple pulse players?  Some people
+  claim yes.  The first idea I tried was called "RTP", because it can be
+  sent over multicast IP, and this seems like the right application (and
+  only application) for multicast.  This does not work, but it gets
+  close enough to be frustrating--the output is synchronized across
+  multiple players, but with massive packet loss, so they all sound like
+  car radios driving through a bad reception zone.  I eventually found
+  confirmation that it is just broken.[28] The pulseaudio RTP
+  implementation blasts out thousands of tiny UDP packets per second,
+  even when carrying no data, which will DoS any wifi and many wired
+  networks.
+
+  What's troubling is not really the bug; it's that that for eight
+  years, the same bug has been re-filed over and over, and the
+  developers have closed it over and over while doing none of (a) fixing
+  it, (b) removing the feature, or (c) removing the documentation that
+  pretends it works.  This is a bad but common pattern that jwz famously
+  named "CADT" for Cascade of Attention-Deficit Teenagers.[29] Any time
+  you encounter a project that runs this way, it is best to turn back.
+  This would be a good time.
+
+  Continuing forward, pulseaudio accumulated two more strikes:
+
+  + Running a daemon that is not captive to a "desktop" session is
+    "highly discouraged", because the "maintainer's interest is rather
+    minimal."[30] Security handwaving ensues, including the howler that
+    pulse allows clients to load modules, aka jam random blobs of
+    memory-unsafe C into your running process.
+
+  + It has a lot of weird bloat: why in the hell does it have "load
+    sample" and "play sample" as low-level client commands?
+
+  And then a showstopper: I got stumped for two hours by a situation
+  where a pulse-playing program worked in one terminal window, and not
+  in another.  I checked seemingly everything about the process, which
+  was identical.  Nothing was logged anywhere.  (Yes, I know about
+  journalctl, and I am also angry that I have to use that.)
+
+  Eventually in desperation I was binary searching through the
+  environment variables that looked extremely irrelevant and stumbled on
+  the answer--if $DISPLAY is set, then pulse client libraries try to ask
+  your X root window for some random xprops for configuration, which
+  silently overrides the config files you can see with your eyes, and
+  silently fails.  The whole search process [maybe] is explained in the
+  FAQ[31], which lists 7 (seven) places that libpulse invisibly consults
+  for configuration.  There is, apparently, no way to disable this.
+
+  So to sum up: pulseaudio is a bloated monolith, has poor ergonomics,
+  changes its behavior based on many subtle and invisible influences,
+  has showstopper bugs in core functions that have been unfixed since
+  Obama's first term, and is maintained by a cascade of attention
+  deficit teenagers.  It is definitely not good for the thing I want to
+  do, and I remain unconvinced that it is good for anything.
+
+  > [pi3 ~]$ pacman -Rs pulseaudio
+
+
+6.4 sndio
+~~~~~~~~~
+
+  Despairing of pulseaudio, I didn't know what to do.  It seemed that
+  JACK and pulse were the only options.  Sometimes in this situation it
+  helps to search for "why does xyz suck" or "why do people hate xyz".
+  You may find alternatives this way, and if not, at least you will find
+  that other people agree it sucks.  So this is what I tried.
+  (Humorously, with my search history, google autocompletes "why does
+  pulseaudio suck" from "why does p".)
+
+  Indeed, the people that have found that pulseaudio sucks are legion.
+  But lo: somewhere halfway down a "hacker" "news" thread, a miracle
+  occurred.  Somebody said, "if pulseaudio is so bad, why are there no
+  realistic alternatives?" and a Hackernews spoke thusly:
+
+  > Look at sndio if you want to see how sound should be done.  Excusing
+  > the horrible mess pulseaudio is with the horrible state of Linux
+  > Audio doesn't cut it, when OpenBSD has been offering a superior and
+  > simpler alternative for years![32]
+
+  This is really why I had to write this [now very long] report: I found
+  the answer to a problem in some "hacker" "news" comments.
+
+  Let's see about this sndiod.  What does it have to say for itself?
+
+  > Sndio is a small audio and MIDI framework part of the OpenBSD
+  > project...Sndio is designed to work for desktop applications, but
+  > pays special attention to synchronization mechanisms and reliability
+  > required by music applications.  Reliability through simplicity are
+  > part of the project goals.[33]
+
+  I can feel salvation around the corner.
+
+  > [pi3b ~]$ doas pacman -S sndio
+  >
+  > Packages (1) sndio-1.7.0-3
+  >
+  > Total Installed Size: 0.23 MiB
+  > Net Upgrade Size: 0.00 MiB
+  >
+  > :: Proceed with installation? [Y/n]
+
+  I can re-download this in 5 minutes over 9600 baud xmodem if I have
+  to.
+
+  It comes from OpenBSD, so I know that it will be configured entirely
+  by the command line, and all of the options will be correctly
+  documented on the man page.  The man page is not going to say, "The
+  complete documentation for sndiod is maintained as a Texinfo manual."
+  If you break any of these rules then Theo makes you sleep in the hut
+  outside the village until the second full moon.
+
+  The sndiod man page is shorter than the "Differences between JACK1 and
+  JACK2" web page.  All we need is one option:
+
+  > -L addr Specify a local network address sndiod should listen on...If
+  >          the option argument is '-' then sndiod will accept
+  >          connections from any address.  As the communication is not
+  >          secure, this option is only suitable for local networks
+  >          where all hosts and users are trusted.
+
+  Yes.  This is the Way.  Obviously I am going to use this on a local
+  network, and equally obviously, if I want to send it over the internet
+  I will use an ssh tunnel or something else that is actually good at
+  it.  If I start trying to think up crappy "magic cookie" schemes to
+  make this faux-secure then I am wrong and need to go to the hut.
+
+  > [pi3b ~]$ sndiod -L -
+  > [big ~]$ aucat -f snd@pi3b.lan/0 -i /path/to/something.wav
+
+  That's all you have to do.  There aren't four choices of
+  half-implemented network backends.  Remote devices are named in the
+  same style as rsh or ssh, and sndio doesn't act like this is something
+  strange and exotic.
+
+  Note that aucat is the utility that comes with sndiod that mixes,
+  resamples, and reads wav files.  Annoyingly, mplayer isn't packaged
+  with an output plugin that can write directly to sndio.  Most people
+  that want to use sndiod generally on Linux seem to create a fake
+  device in ALSA that pipes to aucat (this takes one line).  In other
+  words, it's not even worth a crusade to get every Linux program in the
+  world to recompile for sndio, because it doesn't need to add 90 MB of
+  client crap to all your processes.
+
+  Even so, MPD does have an output plugin that writes directly to sndio,
+  so I won't have to pipe to aucat.  It looks like this:
+
+  > audio_output {
+  >         type "sndio"
+  >         name "pi3b sndio"
+  >         device "snd@pi3b.lan/0"
+  >         mixer_type "software"
+  > }
+
+  MPD doesn't care if you create multiple sndio audio_output stanzas for
+  different devices.  It will write to them all, or you can enable and
+  disable them individually like all MPD outputs.
+
+  Latency through sndio is low, so the controller still has the
+  satisfying feeling of instant response, rather than after a long lag.
+  But the streams are not synchronized by the time they get to the
+  speakers, so it's bad to stand somewhere you can hear two outputs.
+  Given the various network paths, synchronized output is probably
+  impossible without a closed-loop control scheme like pulseaudio tries
+  and fails to implement.  Synchronized outputs aren't important right
+  now, so I am going to stick with sndiod until the next time I need to
+  throw a giant dance party with multiple rooms.
+
+  Done at last.  The network transport was by far the most difficult and
+  time-consuming part of this adventure.  All that's left is to poke
+  around through the various MPD controllers ("clients") until I find
+  one I like.
+
+
+7 Controller for the server
+===========================
+
+  Recall that one of the charms of MPD is that it does not provide a UI,
+  and there are many choices of clients in different styles.[34] There
+  are command-line clients, web-page clients, and apps billing
+  themselves as "native" to Windows, Linux, Android, and iOS.
+
+  Here is the first chance to improve on 1999--the web page UI was
+  always clunky and slow.  This could be better with a terminal
+  interface.  I'm going to want the client to be small, so it can run on
+  a small machine.  (The place where I am usually working is a tiny
+  machine that is allowed to connect to the internet.)  So this is what
+  I am looking for.
+
+
+7.1 mpc
+~~~~~~~
+
+  This is the reference implementation that was installed with mpd.  It
+  can command every feature of mpd (I think?) in one-and-done style,
+  where you tell it what to do, it does it, and immediately exits.
+
+  > [big ~]$ mpc search title Concubine
+  > flac/1996/Rasputina - Thanks for the Ether.flac/track_004.flac
+
+  > [big ~]$ mpc play
+  > Owl City - Fireflies
+  > [playing] #1/54 0:00/3:48 (0%)
+  > volume: 97% repeat: off random: off single: off consume: off
+
+  It's very good that this exists, because it will always be there when
+  I have broken my other client and need to make mpd stop.  It will also
+  be easy to script or automate when I inevitably determine that this is
+  something I need to do.  But for all-day use it is a little bit
+  Spartan, even for me.
+
+
+7.2 pms -- <https://github.com/ambientsound/pms>
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  I tried this first because it was written in Go and I wanted it to
+  work, despite the unfortunate name which they believe stands for
+  Practical Music Search.  It works, the interface is fine, and the
+  self-desription on its README.md is accurate.  It makes good use of
+  terminal color.  There were a couple of rendering bugs, but they would
+  be ignorable.  As expected, it was simple to build (Go is good at
+  this), which means it would be easy to modify.
+
+  It's noticeably slow on my small machine, though.  Looking closer,
+  it's because they have really gone ham with the "search" part.  As
+  they write in README.md, they use a heavyweight full-text index
+  engine, and "for a library of about 30,000 songs, you should expect
+  using about 500 MB of disk space and around 1 GB of RAM."
+
+  Well that is about the size of library that I have, and those numbers
+  check out:
+
+  PID   USERNAME THR PRI NICE  SIZE   RES STATE C TIME    WCPU COMMAND
+  13184 mikey     10  37    0 2107M 1265M uwait 3 2:06 108.16% pms
+
+  Oof.  1.2GB resident RAM size and >1 cpu used continuously while doing
+  nothing.  They say this is what it costs to achieve "sub-millisecond
+  full text search," and I have no reason to think this is wrong, but I
+  also have no reason for sub-millisecond full text search.  mpd has
+  some kind of basic substring search that executes server-side, and
+  this is fine for me.
+
+  If you don't care about the resource demands and you like the
+  interface and/or Go, then pms looks good.
+
+
+7.3 vimpc -- <https://github.com/boysetsfrog/vimpc>
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  The next thing I tried was vimpc, because its ambition is strictly to
+  be "an alternative to clients such as ncmpc, that tries to provide an
+  interface similar to that of the vim editor."  It is usually a good
+  idea to mimic the interface of something familiar in a big new curses
+  program.
+
+  I didn't try to build it; it was in the binary packages.  The package
+  weighs a respetable 900k, which is only three sndios, and 1/100 of a
+  pulseaudio.  The UI is fast and lightweight and requires some learning
+  curve, but the help file appears at startup.  Startup and quit-time is
+  negligible.
+
+  It required some fiddling since some of the default colors rendered as
+  black on black on my terminal.  If you should have the same problem,
+  here is how to make everything visible:
+
+  > :hi status white black
+  > :hi tab white black
+  ...etc
+
+  One other small oddity is that 'q' and ':q' close the current window,
+  not the whole program.  Unless there only is one window; then the
+  program exits.  Five windows open themselves at startup, so to get out
+  you need five 'q's.  Or one emphatic 'ZZ'.
+
+  I used vimpc with success for a few days.  I only ended up going back
+  to the fish pond because I missed the columns of pms.  (like, artist,
+  title, and track number aligned in columns.  That's all.)  vimpc does
+  it its own way, as you can see in the screenshots in the README.md.
+
+
+7.4 ncmpc -- <https://musicpd.org/clients/ncmpc>
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  This must be the "official" curses client, since you download it from
+  the mpd webzone.  From its screenshot, it looks like the interface is
+  very similar to vimpc.  It got a very short audition on my computer
+  because somehow curses was completely broken, rendering gibberish.
+  This probably isn't any big problem, and it may well be something
+  weird about my binary package or local machine, but I don't have much
+  reason to bother about it while there are several other acceptable
+  choices.
+
+
+7.5 ncmpcpp -- <https://rybczak.net/ncmpcpp>
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  This one teeters on the edge of too many features: tag editing, music
+  visualizing, downloading lyrics, "and a lot more minor functions."
+  It's also edged out pms to win "most awkward name," which I can never
+  remember, except by re-deriving it: first there was mpc, then there
+  was an ncurses mpc named ncmpc, then someone made it "plus plus" and
+  named it ncmpcpp.
+
+  It does the columns, it mostly renders without problems, and it
+  occupies an acceptable 19MB while running.  The interface is a little
+  easier than the other curses clients, in that there are popup menus
+  and so on.  I could probably give it to a friend and they would be
+  able to make it go.  So, this is the current bake-off champion, and
+  what I am using now.
+
+  The keyboard controls were weird to me, and the way you remap them is
+  also a little weird, but with some effort I got it to act kind of like
+  a vi/gmail hybrid.  I put the configuration for this on jithub.[35]
+
+
+8 How did we do?
+================
+
+  The "final" answer, which I hope to last another 10-20 years:
+
+  +--------------+          +-------------+
+  | MPD decodes  |  sndio   | rpi3/4 with |    analog
+  | and plays    | =======> | hifiberry   | => hardware => ...
+  +-^---^--------+          +-------------+
+    |   |
+    |   +-- browser/player UI: ncmpcpp
+    |
+    +------ source files over NFS
+
+  In most ways this turned out pretty well.
+
+  + The players are ~4 watt devices, less than 1 watt when inactive.
+  + Each players is $80-120, depending on if you want a fancy case.
+  + The server should be pretty low maintenance.  I could move it to one
+    of the Raspberry Pis if I wanted.
+  + It runs directly from the source files (flac); I don't have to
+    maintain a copy and and update pipeline.
+  + The console client is fast.  Somehow there is a big difference
+    between "push enter and something happens immediately" and "click
+    webzone link and it starts playing 2-3 seconds later".
+  + The end to end signal path is well above the threshold of "good
+    enough for me" audio quality.
+
+  There are a couple places it falls short of 1999.
+
+  + No local control of players.  I wouldn't want much, but maybe
+    "pause" would be nice.  I'm sure this can be done with an "IR
+    blaster" equivalent on the Raspberry Pi (and another 8 hours sorting
+    through the 14 possibilities).
+  + Can't synchronize multiple players.  It's not important in 2020, but
+    it was a good party trick (literally) in 1999.  I might try to find
+    an RTP/multicast scheme that isn't tied to the pulseaudio mess.
+
+  If you want to copy the setup (or when I have to recreate it), it will
+  only take a couple of hours.  Most of that will be setting up the
+  Raspberry Pis.  All of the pieces are easy, which is how they won
+  their respective bake-offs.  The time-consuming part was trying all
+  the things that were rejected.
+
+
+9 Notes
+=======
+
+  [1] https://en.wikipedia.org/wiki/Napster#/media/File:Napster_Unique_Users.svg
+  [2] <https://en.wikipedia.org/wiki/ITunes_Store>
+  [3] <https://www.youtube.com/watch?v=HaF-nRS_CWM>
+  [4] <https://archive.org/details/computer_shopper-2000-12/page/n143/mode/2up>
+  [5] <https://wiki.slimdevices.com/index.php/Hardware_comparison.html>
+  [6] this consisted of: one file per album, a single end-to-end audio
+  stream as dumped by cdparanoia, the CD TOC stored in a flac "cuesheet"
+  block, tags like song titles in a "vorbis_comment" block, and the
+  cover art in a homemade metadata extension block.  I still use this,
+  but with the cover art moved to the now-standard flac metadata
+  "picture" block.
+  [7] https://www.cnet.com/news/logitech-leaves-squeezebox-fans-wondering-whats-next/
+  [8] https://smile.amazon.com/Micca-MB42X-Bookshelf-Speakers-Tweeter/dp/B00E7H8GG2
+  [9] https://smile.amazon.com/Lepai-LP-2020TI-Instruments-TPA3118-Amplifier/dp/B071FJF4FF
+  [10] https://www.utsource.net/itm/p/9774301.html
+  [11] https://www.ti.com/product/PCM5122#order-quality
+  [12] https://www.raspberrypi.org/forums/viewtopic.php?t=59823
+  [13] http://www.icrobotics.co.uk/wiki/index.php/Turning_the_Raspberry_Pi_Into_an_FM_Transmitter
+  [14] https://shop.pimoroni.com/collections/pirate-audio
+  [15] https://www.hifiberry.com/shop/#boards
+  [16] https://www.raspberrypi.org/forums/viewtopic.php?t=253012
+  [17] https://www.videolan.org/streaming-features.html
+  [18] https://jan.newmarch.name/LinuxSound/Sampled/Architecture/
+  [19] https://jackaudio.org
+  [20] https://github.com/jackaudio/jackaudio.github.com/wiki
+  [21] https://github.com/jackaudio/jackaudio.github.com/wiki/Differences-between-jack1-and-jack2
+  [22] doas is doing the same thing as sudo.
+  [23] https://jackaudio.org/faq/netjack.htm
+  [24] I am just refusing to call the JACK connectors "ports", because
+  we are trying to do a networking, and in networking the word "port" is
+  already taken and it means something else.
+  [25] https://discourse.ardour.org/t/a-reliable-systemd-startup-for-jack/103738
+  [26] https://www.freedesktop.org/wiki/Software/PulseAudio/
+  [27] https://wiki.archlinux.org/index.php/PulseAudio#Networked_audio
+  [28] https://yabb.jriver.com/interact/index.php?topic=97478.0
+  [29] https://www.jwz.org/doc/cadt.html
+  [30] https://www.freedesktop.org/wiki/Software/PulseAudio/Documentation/User/WhatIsWrongWithSystemWide/
+  [31] https://www.freedesktop.org/wiki/Software/PulseAudio/FAQ/#index6h3
+  [32] https://news.ycombinator.com/item?id=12336885
+  [33] https://sndio.org/
+  [34] https://musicpd.org/clients/ Yes, earlier I said that when
+  there are 4 choices of something, they are all bad.  39 choices is
+  different, in that most of them will be bad, but there will be a few
+  that work.
+  [35] https://gist.github.com/mdickers47/a93006f341d8b836bf1aa477dfeaa4f9
