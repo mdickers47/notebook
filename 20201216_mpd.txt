@@ -849,8 +849,7 @@ technology.
   Yes.  This is the Way.  Obviously I am going to use this on a local
   network, and equally obviously, if I want to send it over the internet
   I will use an ssh tunnel or something else that is actually good at
-  it.  If I start trying to think up crappy "magic cookie" schemes to
-  make this faux-secure then I am wrong and need to go to the hut.
+  it.
 
   > [pi3b ~]$ sndiod -L -
   > [big ~]$ aucat -f snd@pi3b.lan/0 -i /path/to/something.wav
