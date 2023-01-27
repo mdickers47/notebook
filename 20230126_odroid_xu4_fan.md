@@ -79,11 +79,13 @@ at 60C, it then continues to run until 55C or some lower bound, rather
 than turn off again at 59.99.  The Linux 4.14 kernel on here has this
 feature:
 
-``` [alarm@xu4 ~]$ ls
+```
+[alarm@xu4 ~]$ ls
 /sys/devices/virtual/thermal/thermal_zone2/trip_point_0_*
 /sys/devices/virtual/thermal/thermal_zone2/trip_point_0_hyst
 /sys/devices/virtual/thermal/thermal_zone2/trip_point_0_temp
-/sys/devices/virtual/thermal/thermal_zone2/trip_point_0_type ```
+/sys/devices/virtual/thermal/thermal_zone2/trip_point_0_type
+```
 
 It's documented the same way as all Linux features, which is not at all,
 except by random mailing list posts and the source code.  Anyway it does
@@ -101,8 +103,10 @@ determines how much power to send the fan (via PWM) and therefore its
 speed.  These can be read out of another device node, which is for some
 reason in a different place not near the thermal nodes:
 
-``` [alarm@xu4 ~]$ cat
-/sys/devices/platform/pwm-fan/hwmon/hwmon0/fan_speed 0 120 180 240 ```
+```
+[alarm@xu4 ~]$ cat
+/sys/devices/platform/pwm-fan/hwmon/hwmon0/fan_speed 0 120 180 240
+```
 
 "Trip point 1" is where we go from 0 to 120/255ths, which is noticeably
 loud.  So I tried raising the threshold for trip point 1 to 65C, on the
@@ -121,8 +125,10 @@ between 0 and 120 will still be annoying.  This is apparently a CPU that
 can't be passively cooled, so there is no choice about the fact that the
 fan is going to run.  So a better idea is to never let it go to 0:
 
-``` [alarm@xu4 ~]$ echo "60 120 180 240" | \ doas tee
-/sys/devices/platform/pwm-fan/hwmon/hwmon0/fan_speed ```
+```
+[alarm@xu4 ~]$ echo "60 120 180 240" | \ doas tee
+/sys/devices/platform/pwm-fan/hwmon/hwmon0/fan_speed
+```
 
 At 60/255ths the fan is spinning; I can see it but not hear it.  Now at
 idle, the hottest zone doesn't go above 57, and a louder speed is never
