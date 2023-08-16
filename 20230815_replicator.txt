@@ -1,0 +1,216 @@
+               __________________________________
+               A BRIEF INCURSION INTO 3D PRINTING
+                        Mikey Dickerson
+                          August 2023
+               __________________________________
+
+
+A student brought me a 2013-vintage "Makerbot Replicator 2," which he
+bought secondhand at some point in the past, and had trouble with.
+Now, observatory operations create infinite demand for weird little
+adapters, mounting brackets, cable holders, and any number of other
+one-off doowackies.  The normal experience of owning expensive
+telescopes is that the thing that just broke was manufactured in a
+production run of 12, and the company that made it doesn't exist
+anymore, the person that designed it has died, and the only
+off-the-shelf replacement will force you to also replace half of the
+connected system.  So it is possible that learning to fabricate parts
+would have actual value here.
+
+Here is what was learned.
+
+# The MakerBot company is defunct.
+
+All of its hardware and software is abandonware.  In the process of
+dying, the company alienated its hobbyist customers by
+un-open-sourcing its designs (ever thus when the money faucet runs
+dry).  Combined with the fact that the whole scene has contracted
+significantly since the fad days of 2010-2013, the result is that the
+remaining hobbyist scene mostly ignores Makerbot machines.
+
+# This generation of printer is a simple machine.
+
+The gantry consists of 3 stepper motors on rails, and the extruder is
+another stepper motor (the same one), a heater, and a nozzle.  You can
+take the whole thing apart, find a clog or jam, and put it back
+together in 15 minutes, if you hypothetically needed to do such a
+thing, which is a topic we will revisit.
+
+The motors are controlled by almost literally an Arduino, being an
+ATmega 1280.  Modifying the firmware requires the same tools and
+process as Arduino-world.  Hello avr-gcc my old friend.
+
+# You will certainly have to replace the firmware.
+
+The stock firmware is limited to OG SD cards (not SDHC, etc) the FAT12
+filesystem and a maximum size of 2GB.  This is surprising for 2010 and
+crippling in 2023.  "Sailfish" is the name that the hobbyist firmware
+last used before also becoming abandonware.  Its website is gone, but
+a git repository survives at [1].  I spent hours getting it to compile
+inside a docker container with just the right versions of avr-libc,
+etc.  Only after that was done, I went looking for whatever
+Windows-only crapware tool is capable of flashing the firmware.  (I am
+sure avrdude can do it, but that road is always a lot of miserable
+trial and error and every "error" might brick the controller.)  This I
+could only find inside a zip file preserved by the Internet
+Archive...which bundled the firmware binary that I needed.  Dammit.
+
+At least this worked and the Replicator 2 now sports "Sailfish 7.7"
+and various new songs of "booted up" and "preheat complete."  More
+usefully, it can read an SD card made after the George W. Bush era.
+
+# The tool chains all suck.
+
+The quick way to explain this to engineers of my generation is to say
+that all of the software here is a spiritual descendant of the crap
+that came on the CD-ROM with your inkjet printer in the 90s.
+
+The main thing you need software for is that the things you want to
+print arrive in the form of 3D models in STL format, and they have to
+be rendered into tool-path instructions for the printer to execute.
+There are a lot of printer- and filament-specific decisions baked into
+the tool-path, so the "slicer" programs are necessarily complicated.
+Unnecessarily, they are also massively bloated with 200+ MB of binary
+dependencies so that they can try and fail to do things like render 3d
+previews.
+
+Here are 3 sucky choices out of this bunch of sucks, plus another
+piece of suckware that isn't a choice.
+
+## PrusaSlicer
+
+prusa-slicer[2] is the most actively maintained fork of the defunct
+Linux slicer ur-program called slic3r.  It is provided by a printer
+manufacturer, and non-Prusa printers are second class citizens.  It
+has no profile for Replicator 2 anyway.  It's "cross-platform" C++ of
+the type that relies on clunky middleware (like wxWidgets) to produce
+a second-class Linux appimage that nobody knows how to debug.
+
+The "how to build" wiki page contains this line, an all-time great:
+"PrusaSlicer uses CMake and the build is quite simple, the only tricky
+part is resolution of dependencies."[3]  YOU DON'T SAY DOT JPEG.
+
+The quite simple build takes about 2 hours to compile a 62 MB binary
+that renders a blank white window where the "3D" part of the GUI is
+supposed to be, and seg faults in any stiff breeze.
+
+## SuperSlicer
+
+super-slicer[4] is a fork of prusa-slicer.  At this writing, it is
+1906 commits ahead and 4865 commits behind the prusa3d repository.
+What are the differences?  What is the point of this fork?  Eh, these
+aren't the kind of projects that have answers to that kind of
+question.
+
+The super-slicer build process is also quite simple, being a fork, and
+this one produces a simpler result, which is that it fails to compile
+at all.
+
+`$ rm -rf github.com/supermerill/SuperSlicer`
+
+## Cura
+
+Cura is also provided by a printer manufacturer and reddit will tell
+you it is the "best on Linux unless you need advanced features."  It
+also has second-class support for non-Ultimaker printers, and also has
+no Replicator 2 profile.  The first time I tried to run this, it
+melted down in a venv Python mess.  I came back to it after giving up
+on the slic3r family, and found that as long as we are willing to go
+full nihilist, then one of the .appimage files just runs.
+
+The Cura GUI makes you opt out of the Ultimaker Preferred Plus Movies
+and ESPN bundle signup process multiple times.  Once you get past
+that, it is a perfectly traditional Unix GUI app, by which I mean it
+has GUI widgets that exist in no other Unix app, and yet it preserves
+that essential je ne sais quoi of "baby's first webpage" that has
+not changed since Tcl/Tk.
+
+Some forum posters have hashed out a way to modify the one
+"Replicator" profile that Cura knows about to work on the Replicator
+2, allegedly.[5] Cura and gpx (next section) are the only path by
+which I ever got an x3g file that the printer could execute.
+
+## gpx
+
+Also, yes, no matter what "slicer" program you use, it is going to
+produce something called "gcode".  Gcode is a list of human readable
+ASCII instructions, very much like Logo.  The Makerbot machines
+require another compilation step to convert gcode into something
+called x3g.  x3g is some proprietary binary format, yet somehow, the
+x3g files are no smaller than the gcode.  That is hard to do!
+
+No other manufacturer ever used x3g, so nothing except the old
+Makerbot abandonware supports it.  The only implementation available
+outside the wayback machine is something called "GPX".[6] This is a
+CLI program in C that you can actually build and run.
+
+There can be problems at this step, mainly if your slicer has output
+gcode statements that gpx doesn't know, but for the most part you can
+figure out what it was trying to do by looking at the gcode and work
+around it.
+
+It is alleged that Cura has a plugin that can write x3g, but it did
+not work on a first try and I did not bother with it.
+
+# Hardware problems
+
+Having completed that voyage of discovery, starting a print is a
+simple 6 step process:
+
++ download a model as an STL
++ use cura to compile the model into gcode
++ use gpx to compile the gcode into an x3g
++ copy the x3g file to a humongous SD card from the future such as 16GB
++ move the SD card to the printer
++ push the "print from sd card" button on the printer menu
+
+It seemed a miracle when I saw any recognizable shape start to appear
+on the build plate at all.  I was able to build some of the small test
+models which are the same ones that you have seen on the desk of every
+single person who bought a 3D printer.
+
+Then I tried to print some more complex shapes off the internet:
+specifically, a miniature White House and a basic case for a Raspberry
+Pi.  Every time, the extruder clogs and stops printing about 60 to 75
+minutes in.  I found and fixed a couple of problems that are not worth
+explaining.  I tried different filaments, different speeds, higher
+temperatures, and taking apart the extruder and cleaning its various
+parts.  No print ever survived past about 10 layers or 1cm.  I have
+about 10 copies of the bottom centimeter of the White House model, and
+one partial Raspberry Pi case that would certainly have been useless
+anyway since the layers separated and fell apart when touched.
+
+# Possible next steps
+
+So after about a day of work (2-3 calendar days because each print
+attempt takes an hour or more), I am calling it off; the machine in
+its present state is useless.  It worked enough to give me a sense of
+what you can expect to make this way.  I can also see that, as with
+most other things, a machine that actually works probably costs an
+order of magnitude more than the "entry level".  Such a machine would
+have to be used for real (not printing another octopus figure) a few
+dozen times before it could possibly be worth it.  That's not going to
+be in the budget any time soon.
+
+This old machine does have some virtues I appreciate.  I can see how
+the whole thing works, since it's nothing but an Atmel microcontroller
+and some stepper motors.  The programs it executes are brainless lists
+of instructions such as "move to X=101mm, Y=55.1mm, Z=0.3mm" which are
+also easy to read and fix by hand.  And because there was a short
+"open hardware" era in Makerbot history, it is still possible to find
+cheap replacement parts.
+
+My current guess is that one or more of the print nozzle, the "thermal
+barrier tube", and the PLA filament is unusable after 12 years in
+somebody's garage.  All of those together can be replaced for less
+than $100, so I may try it later this fall.  This internet will be
+updated with any further developments.
+
+--
+
+[1] https://github.com/jetty840/Sailfish-MightyBoardFirmware.
+[2] https://github.com/prusa3d/PrusaSlicer
+[3] https://github.com/prusa3d/PrusaSlicer/blob/master/doc/How%20to%20build%20-%20Linux%20et%20al.md
+[4] https://github.com/supermerill/SuperSlicer
+[5] https://community.ultimaker.com/topic/32744-better-method-to-using-replicator-2-printers-with-cura/
+[6] https://github.com/markwal/GPX
